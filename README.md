@@ -37,5 +37,5 @@ To run this project, follow these simple steps:
 5. **Open your browser:**
    Go to http://127.0.0.1:8001 and start analyzing text!
 
-  **AUTHOR**
-ESHA DILEEP
+##  **AUTHOR**
+- ESHA DILEEP
