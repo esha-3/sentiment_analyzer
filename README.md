@@ -38,4 +38,4 @@ To run this project, follow these simple steps:
    Go to http://127.0.0.1:8001 and start analyzing text!
 
   **AUTHOR**
-  ESHA DILEEP
+ESHA DILEEP
