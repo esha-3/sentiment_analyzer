@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Sentiment analysis tool. Analyze the emotional tone of any text instantly with polarity and subjectivity scores.">
+    <title>Sentiment Analyser — Text Analysis</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght=300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* ===== RESET & TOKENS ===== */
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg-primary: #18040d;
+            --bg-card: rgba(255, 255, 255, 0.04);
+            --bg-card-hover: rgba(255, 255, 255, 0.07);
+            --border-glass: rgba(255, 255, 255, 0.08);
+            --text-primary: #fbeef3;
+            --text-secondary: #d9b8c7;
+            --text-muted: #9b7285;
+            --accent-violet: #ec4899;
+            --accent-blue: #3b82f6;
+            --accent-cyan: #06b6d4;
+            --accent-emerald: #10b981;
+            --accent-amber: #f59e0b;
+            --accent-rose: #f43f5e;
+            --gradient-primary: linear-gradient(135deg, #ec4899, #f43f5e, #db2777);
+            --gradient-positive: linear-gradient(135deg, #10b981, #06b6d4);
+            --gradient-negative: linear-gradient(135deg, #f43f5e, #f97316);
+            --gradient-neutral: linear-gradient(135deg, #f59e0b, #eab308);
+            --radius-lg: 20px;
+            --radius-md: 14px;
+            --radius-sm: 10px;
+            --shadow-glow: 0 0 60px rgba(236, 72, 153, 0.15);
+            --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+
+        body {
+            font-family: var(--font);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        /* ===== ANIMATED BACKGROUND ===== */
+        .bg-mesh {
+            position: fixed; inset: 0; z-index: -1; overflow: hidden;
+        }
+        .bg-mesh .orb {
+            position: absolute; border-radius: 50%; filter: blur(100px); opacity: 0.35;
+            animation: float 20s ease-in-out infinite;
+        }
+        .bg-mesh .orb:nth-child(1) {
+            width: 600px; height: 600px; top: -15%; left: -10%;
+            background: #ec4899; animation-delay: 0s;
+        }
+        .bg-mesh .orb:nth-child(2) {
+            width: 500px; height: 500px; top: 50%; right: -10%;
+            background: #db2777; animation-delay: -7s;
+        }
+        .bg-mesh .orb:nth-child(3) {
+            width: 450px; height: 450px; bottom: -10%; left: 30%;
+            background: #f43f5e; animation-delay: -14s;
+        }
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(30px, -40px) scale(1.05); }
+            66% { transform: translate(-20px, 30px) scale(0.95); }
+        }
+
+        /* ===== LAYOUT ===== */
+        .app-container {
+            max-width: 780px; margin: 0 auto;
+            padding: 40px 24px 80px;
+        }
+
+        /* ===== HEADER ===== */
+        .header {
+            text-align: center; margin-bottom: 48px;
+        }
+        .header .badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: rgba(236, 72, 153, 0.12); border: 1px solid rgba(236, 72, 153, 0.25);
+            color: var(--accent-violet); font-size: 12px; font-weight: 600;
+            padding: 6px 14px; border-radius: 50px; margin-bottom: 20px;
+            letter-spacing: 0.5px; text-transform: uppercase;
+        }
+        .header .badge .dot {
+            width: 6px; height: 6px; border-radius: 50%; background: var(--accent-emerald);
+            animation: pulse-dot 2s ease-in-out infinite;
+        }
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.8); }
+        }
+        .header h1 {
+            font-size: clamp(28px, 5vw, 42px); font-weight: 800;
+            background: var(--gradient-primary); -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent; background-clip: text;
+            line-height: 1.2; margin-bottom: 12px;
+        }
+        .header p {
+            font-size: 16px; color: var(--text-secondary); max-width: 500px; margin: 0 auto;
+        }
+
+        /* ===== GLASS CARD ===== */
+        .glass-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius-lg);
+            backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+            padding: 32px;
+            box-shadow: var(--shadow-glow);
+            transition: var(--transition);
+        }
+        .glass-card:hover {
+            background: var(--bg-card-hover);
+            border-color: rgba(255,255,255,0.12);
+        }
+
+        /* ===== TEXTAREA ===== */
+        .input-section { margin-bottom: 32px; }
+        .input-label {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 12px;
+        }
+        .input-label span { font-size: 14px; font-weight: 600; color: var(--text-secondary); }
+        #charCount { font-size: 13px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+        #textInput {
+            width: 100%; min-height: 140px; padding: 18px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius-md);
+            color: var(--text-primary); font-family: var(--font); font-size: 15px;
+            resize: vertical; outline: none; transition: var(--transition);
+            line-height: 1.7;
+        }
+        #textInput::placeholder { color: var(--text-muted); }
+        #textInput:focus {
+            border-color: var(--accent-violet);
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
+            background: rgba(255,255,255,0.05);
+        }
+
+        /* ===== BUTTON ===== */
+        .btn-analyze {
+            width: 100%; padding: 16px; border: none; border-radius: var(--radius-md);
+            background: var(--gradient-primary); color: #fff;
+            font-family: var(--font); font-size: 16px; font-weight: 700;
+            cursor: pointer; transition: var(--transition);
+            position: relative; overflow: hidden;
+            letter-spacing: 0.3px;
+        }
+        .btn-analyze::before {
+            content: ''; position: absolute; inset: 0;
+            background: linear-gradient(135deg, transparent, rgba(255,255,255,0.15), transparent);
+            transform: translateX(-100%); transition: 0.5s;
+        }
+        .btn-analyze:hover::before { transform: translateX(100%); }
+        .btn-analyze:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(139, 92, 246, 0.35); }
+        .btn-analyze:active { transform: translateY(0); }
+        .btn-analyze:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .btn-analyze .spinner {
+            display: none; width: 20px; height: 20px;
+            border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff;
+            border-radius: 50%; animation: spin 0.6s linear infinite;
+            margin: 0 auto;
+        }
+        .btn-analyze.loading .btn-text { display: none; }
+        .btn-analyze.loading .spinner { display: inline-block; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ===== ERROR ===== */
+        .error-msg {
+            display: none; padding: 12px 16px; margin-top: 16px;
+            background: rgba(244, 63, 94, 0.1); border: 1px solid rgba(244, 63, 94, 0.25);
+            border-radius: var(--radius-sm); color: var(--accent-rose);
+            font-size: 14px; font-weight: 500;
+        }
+        .error-msg.visible { display: block; animation: fadeSlide 0.3s ease; }
+
+        /* ===== RESULTS ===== */
+        .results-section {
+            margin-top: 32px; display: none;
+            animation: fadeSlide 0.5s ease;
+        }
+        .results-section.visible { display: block; }
+        @keyframes fadeSlide {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .result-header {
+            display: flex; align-items: center; justify-content: center; gap: 12px;
+            margin-bottom: 28px;
+        }
+        .result-emoji { font-size: 42px; animation: bounceIn 0.5s ease; }
+        @keyframes bounceIn {
+            0% { transform: scale(0); }
+            60% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+        .result-label {
+            font-size: 26px; font-weight: 800;
+            background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .result-label.very_positive, .result-label.positive { background-image: var(--gradient-positive); }
+        .result-label.neutral { background-image: var(--gradient-neutral); }
+        .result-label.negative, .result-label.very_negative { background-image: var(--gradient-negative); }
+
+        /* ===== GAUGE ===== */
+        .gauge-container { margin-bottom: 28px; }
+        .gauge-labels {
+            display: flex; justify-content: space-between; margin-bottom: 8px;
+            font-size: 11px; font-weight: 600; color: var(--text-muted);
+            text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .gauge-track {
+            height: 10px; background: rgba(255,255,255,0.06);
+            border-radius: 20px; overflow: hidden; position: relative;
+        }
+        .gauge-fill {
+            height: 100%; border-radius: 20px;
+            transition: width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1),
+                        background 0.5s ease;
+            width: 50%; /* default neutral */
+            position: relative;
+        }
+        .gauge-fill::after {
+            content: ''; position: absolute; right: -5px; top: 50%;
+            transform: translateY(-50%); width: 18px; height: 18px;
+            border-radius: 50%; background: #fff;
+            box-shadow: 0 0 12px rgba(255,255,255,0.4);
+        }
+
+        /* ===== SCORE CARDS ===== */
+        .score-cards {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+        }
+        .score-card {
+            background: rgba(255,255,255,0.03); border: 1px solid var(--border-glass);
+            border-radius: var(--radius-md); padding: 20px; text-align: center;
+            transition: var(--transition);
+        }
+        .score-card:hover { background: rgba(255,255,255,0.06); transform: translateY(-2px); }
+        .score-card .sc-label {
+            font-size: 12px; font-weight: 600; color: var(--text-muted);
+            text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;
+        }
+        .score-card .sc-value {
+            font-size: 32px; font-weight: 800; font-variant-numeric: tabular-nums;
+        }
+        .score-card .sc-bar {
+            margin-top: 10px; height: 4px; background: rgba(255,255,255,0.06);
+            border-radius: 4px; overflow: hidden;
+        }
+        .score-card .sc-bar-fill {
+            height: 100%; border-radius: 4px; transition: width 0.8s ease;
+        }
+
+        /* ===== HISTORY ===== */
+        .history-section {
+            margin-top: 40px;
+        }
+        .history-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 20px;
+        }
+        .history-header h2 {
+            font-size: 20px; font-weight: 700; color: var(--text-primary);
+        }
+        .history-header .count {
+            font-size: 13px; color: var(--text-muted);
+            background: rgba(255,255,255,0.05); padding: 4px 12px;
+            border-radius: 50px;
+        }
+        .history-list { display: flex; flex-direction: column; gap: 10px; }
+        .history-item {
+            display: grid; grid-template-columns: auto 1fr auto auto;
+            gap: 14px; align-items: center;
+            background: rgba(255,255,255,0.02); border: 1px solid var(--border-glass);
+            border-radius: var(--radius-sm); padding: 14px 18px;
+            transition: var(--transition); cursor: default;
+        }
+        .history-item:hover {
+            background: rgba(255,255,255,0.05);
+            border-color: rgba(255,255,255,0.12);
+        }
+        .hi-delete-btn {
+            background: none; border: none; color: var(--text-muted); cursor: pointer;
+            padding: 6px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            transition: var(--transition);
+        }
+        .hi-delete-btn:hover {
+            background: rgba(244, 63, 94, 0.12); color: var(--accent-rose);
+        }
+        .btn-clear-all {
+            background: rgba(244, 63, 94, 0.1); border: 1px solid rgba(244, 63, 94, 0.2);
+            color: var(--accent-rose); font-family: var(--font); font-size: 12px; font-weight: 600;
+            padding: 6px 14px; border-radius: 50px; cursor: pointer; transition: var(--transition);
+            display: none;
+        }
+        .btn-clear-all:hover {
+            background: rgba(244, 63, 94, 0.2); border-color: rgba(244, 63, 94, 0.35);
+        }
+
+        .hi-indicator {
+            width: 10px; height: 10px; border-radius: 50%;
+        }
+        .hi-indicator.very_positive, .hi-indicator.positive { background: var(--accent-emerald); }
+        .hi-indicator.neutral { background: var(--accent-amber); }
+        .hi-indicator.negative, .hi-indicator.very_negative { background: var(--accent-rose); }
+        .hi-text {
+            font-size: 14px; color: var(--text-secondary);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .hi-meta {
+            display: flex; flex-direction: column; align-items: flex-end; gap: 2px;
+            white-space: nowrap;
+        }
+        .hi-score { font-size: 13px; font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+        .hi-date { font-size: 11px; color: var(--text-muted); }
+
+        .empty-state {
+            text-align: center; padding: 40px 20px; color: var(--text-muted); font-size: 14px;
+        }
+        .empty-state .empty-icon { font-size: 36px; margin-bottom: 10px; }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 640px) {
+            .app-container { padding: 24px 16px 60px; }
+            .glass-card { padding: 24px 20px; }
+            .score-cards { grid-template-columns: 1fr; }
+            .history-item { grid-template-columns: auto 1fr auto; }
+            .hi-meta { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Animated background orbs -->
+<div class="bg-mesh" aria-hidden="true">
+    <div class="orb"></div>
+    <div class="orb"></div>
+    <div class="orb"></div>
+</div>
+
+<main class="app-container">
+    <!-- Header -->
+    <header class="header">
+        <h1>Sentiment Analyser</h1>
+        <p>Discover the emotional tone behind any text with real-time NLP analysis</p>
+    </header>
+
+
+    <!-- Input Card -->
+    <section class="glass-card" id="inputCard">
+        <div class="input-section">
+            <div class="input-label">
+                <span>Enter your text</span>
+                <span id="charCount">0 characters</span>
+            </div>
+            <textarea
+                id="textInput"
+                placeholder="Paste an article, tweet, review, or any text you'd like to analyse…"
+                oninput="updateCount()"
+                rows="6"
+            ></textarea>
+        </div>
+
+        <button class="btn-analyze" id="analyzeBtn" onclick="analyzeSentiment()">
+            <span class="btn-text">✨ Analyse Sentiment</span>
+            <span class="spinner"></span>
+        </button>
+
+        <div class="error-msg" id="errorMsg"></div>
+
+        <!-- Results -->
+        <div class="results-section" id="resultsSection">
+            <div class="result-header">
+                <span class="result-emoji" id="resultEmoji"></span>
+                <span class="result-label" id="resultLabel"></span>
+            </div>
+
+            <div class="gauge-container">
+                <div class="gauge-labels">
+                    <span>Negative</span>
+                    <span>Neutral</span>
+                    <span>Positive</span>
+                </div>
+                <div class="gauge-track">
+                    <div class="gauge-fill" id="gaugeFill"></div>
+                </div>
+            </div>
+
+            <div class="score-cards">
+                <div class="score-card">
+                    <div class="sc-label">Polarity</div>
+                    <div class="sc-value" id="polarityValue">—</div>
+                    <div class="sc-bar"><div class="sc-bar-fill" id="polarityBar"></div></div>
+                </div>
+                <div class="score-card">
+                    <div class="sc-label">Subjectivity</div>
+                    <div class="sc-value" id="subjectivityValue">—</div>
+                    <div class="sc-bar"><div class="sc-bar-fill" id="subjectivityBar"></div></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- History -->
+    <section class="history-section glass-card" id="historySection" style="margin-top: 24px;">
+        <div class="history-header">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <h2>Recent Analyses</h2>
+                <span class="count" id="historyCount">0 items</span>
+            </div>
+            <button class="btn-clear-all" id="clearAllBtn" onclick="clearAllHistory()">Clear All</button>
+        </div>
+        <div class="history-list" id="historyList">
+            <div class="empty-state">
+                <div class="empty-icon">📝</div>
+                <p>No analyses yet. Try one above!</p>
+            </div>
+        </div>
+    </section>
+</main>
+
+<script>
+    const CSRF_TOKEN = '{{ csrf_token }}';
+
+    function updateCount() {
+        const len = document.getElementById('textInput').value.length;
+        document.getElementById('charCount').textContent = len.toLocaleString() + ' character' + (len !== 1 ? 's' : '');
+    }
+
+    function showError(msg) {
+        const el = document.getElementById('errorMsg');
+        el.textContent = msg;
+        el.classList.add('visible');
+        setTimeout(() => el.classList.remove('visible'), 4000);
+    }
+
+    async function analyzeSentiment() {
+        const text = document.getElementById('textInput').value.trim();
+        if (!text) { showError('Please enter some text to analyse.'); return; }
+
+        const btn = document.getElementById('analyzeBtn');
+        btn.classList.add('loading');
+        btn.disabled = true;
+
+        document.getElementById('errorMsg').classList.remove('visible');
+
+        try {
+            const res = await fetch('/analyze/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': CSRF_TOKEN,
+                },
+                body: JSON.stringify({ text }),
+            });
+
+            const data = await res.json();
+            if (!res.ok) { showError(data.error || 'Something went wrong.'); return; }
+
+            displayResults(data);
+            loadHistory();
+        } catch (err) {
+            showError('Network error. Please try again.');
+        } finally {
+            btn.classList.remove('loading');
+            btn.disabled = false;
+        }
+    }
+
+    function displayResults(data) {
+        const section = document.getElementById('resultsSection');
+        section.classList.add('visible');
+
+        // Emoji mapping
+        const emojiMap = {
+            very_positive: '🤩', positive: '😊', neutral: '😐',
+            negative: '😞', very_negative: '😡'
+        };
+        const labelMap = {
+            very_positive: 'Very Positive', positive: 'Positive', neutral: 'Neutral',
+            negative: 'Negative', very_negative: 'Very Negative'
+        };
+
+        document.getElementById('resultEmoji').textContent = emojiMap[data.classification] || '😐';
+        const lbl = document.getElementById('resultLabel');
+        lbl.textContent = labelMap[data.classification];
+        lbl.className = 'result-label ' + data.classification;
+
+        // Gauge: polarity -1..+1  →  0%..100%
+        const pct = ((data.polarity + 1) / 2) * 100;
+        const gauge = document.getElementById('gaugeFill');
+        gauge.style.width = pct + '%';
+
+        if (data.polarity > 0.05) {
+            gauge.style.background = 'var(--gradient-positive)';
+        } else if (data.polarity < -0.05) {
+            gauge.style.background = 'var(--gradient-negative)';
+        } else {
+            gauge.style.background = 'var(--gradient-neutral)';
+        }
+
+        // Score cards
+        const polVal = document.getElementById('polarityValue');
+        polVal.textContent = (data.polarity >= 0 ? '+' : '') + data.polarity.toFixed(2);
+        polVal.style.color = data.polarity > 0.05 ? 'var(--accent-emerald)' :
+                              data.polarity < -0.05 ? 'var(--accent-rose)' : 'var(--accent-amber)';
+
+        const polBar = document.getElementById('polarityBar');
+        polBar.style.width = pct + '%';
+        polBar.style.background = data.polarity > 0.05 ? 'var(--accent-emerald)' :
+                                   data.polarity < -0.05 ? 'var(--accent-rose)' : 'var(--accent-amber)';
+
+        const subVal = document.getElementById('subjectivityValue');
+        subVal.textContent = (data.subjectivity * 100).toFixed(0) + '%';
+        subVal.style.color = 'var(--accent-blue)';
+
+        const subBar = document.getElementById('subjectivityBar');
+        subBar.style.width = (data.subjectivity * 100) + '%';
+        subBar.style.background = 'var(--accent-blue)';
+
+        // Scroll into view
+        section.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    async function loadHistory() {
+        try {
+            const res = await fetch('/history/');
+            const data = await res.json();
+            const list = document.getElementById('historyList');
+            const countEl = document.getElementById('historyCount');
+            const clearBtn = document.getElementById('clearAllBtn');
+
+            if (!data.results || data.results.length === 0) {
+                list.innerHTML = `<div class="empty-state"><div class="empty-icon">📝</div><p>No analyses yet. Try one above!</p></div>`;
+                countEl.textContent = '0 items';
+                clearBtn.style.display = 'none';
+                return;
+            }
+
+            countEl.textContent = data.results.length + ' item' + (data.results.length !== 1 ? 's' : '');
+            clearBtn.style.display = 'block';
+
+            list.innerHTML = data.results.map(r => `
+                <div class="history-item">
+                    <div class="hi-indicator ${r.classification}"></div>
+                    <div class="hi-text">${escapeHtml(r.text)}</div>
+                    <div class="hi-meta">
+                        <span class="hi-score">${r.polarity >= 0 ? '+' : ''}${r.polarity.toFixed(2)}</span>
+                        <span class="hi-date">${r.created_at}</span>
+                    </div>
+                    <button class="hi-delete-btn" onclick="deleteHistoryItem(event, ${r.id})" title="Delete this analysis">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                    </button>
+                </div>
+            `).join('');
+        } catch (err) {
+            console.error('Failed to load history:', err);
+        }
+    }
+
+    async function deleteHistoryItem(event, id) {
+        event.stopPropagation();
+        if (!confirm('Are you sure you want to delete this analysis?')) return;
+        try {
+            const res = await fetch(`/delete/${id}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': CSRF_TOKEN,
+                }
+            });
+            if (res.ok) {
+                loadHistory();
+            } else {
+                console.error('Failed to delete item');
+            }
+        } catch (err) {
+            console.error('Error deleting item:', err);
+        }
+    }
+
+    async function clearAllHistory() {
+        if (!confirm('Are you sure you want to clear all history?')) return;
+        try {
+            const res = await fetch('/clear-all/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': CSRF_TOKEN,
+                }
+            });
+            if (res.ok) {
+                loadHistory();
+            } else {
+                console.error('Failed to clear history');
+            }
+        } catch (err) {
+            console.error('Error clearing history:', err);
+        }
+    }
+
+    function escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    // Load history on page load
+    document.addEventListener('DOMContentLoaded', loadHistory);
+
+    // Allow Ctrl+Enter to submit
+    document.getElementById('textInput').addEventListener('keydown', function(e) {
+        if (e.ctrlKey && e.key === 'Enter') { analyzeSentiment(); }
+    });
+</script>
+</body>
+</html>
