@@ -33,9 +33,8 @@ To run this project, follow these simple steps:
    pip install django 
 4. **Run the server:**
    cd myproject
-   python manage.py runserver 8001
-5. **Open your browser:**
-   Go to http://127.0.0.1:8001 and start analyzing text!
+   python manage.py runserver 
+5. Run in vs code using live server ( Open code using live server )
 
 ##  **AUTHOR**
  ESHA DILEEP
